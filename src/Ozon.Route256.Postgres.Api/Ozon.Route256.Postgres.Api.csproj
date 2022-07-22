@@ -1,6 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
+    <Protobuf ProtoRoot="Protos" Include="Protos\money.proto" GrpcServices="none" />
+    <Protobuf ProtoRoot="Protos" Include="Protos\order.proto" GrpcServices="Both" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="System.Linq.Async" />
     <PackageReference Include="Grpc.AspNetCore" />
     <PackageReference Include="Grpc.AspNetCore.Server.Reflection" />

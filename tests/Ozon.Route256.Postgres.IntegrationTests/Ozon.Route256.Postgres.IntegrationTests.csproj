@@ -14,5 +14,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Ozon.Route256.Postgres.Api\Ozon.Route256.Postgres.Api.csproj" />
+    <ProjectReference Include="..\..\src\Ozon.Route256.Postgres.Persistence\Ozon.Route256.Postgres.Persistence.csproj" />
   </ItemGroup>
 </Project>
