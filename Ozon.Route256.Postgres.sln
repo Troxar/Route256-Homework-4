@@ -8,6 +8,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "common", "common", "{0D67E7
 		Directory.Packages.props = Directory.Packages.props
 		readme.md = readme.md
 		docker-compose.yml = docker-compose.yml
+		nuget.config = nuget.config
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ozon.Route256.Postgres.Api", "src\Ozon.Route256.Postgres.Api\Ozon.Route256.Postgres.Api.csproj", "{0C09A817-44DC-451C-8D7D-2AD2DDB6D937}"
