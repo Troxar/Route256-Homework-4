@@ -3,10 +3,13 @@ package ozon.route256.postgres;
 option csharp_namespace = "Ozon.Route256.Postgres.Grpc";
 
 import "money.proto";
+import "google/protobuf/timestamp.proto";
 
 service OrderService {
   rpc Get (GetRequest) returns (GetResponse);
   rpc GetStream (GetRequest) returns (stream GetStreamResponse);
+  rpc GetClientOrders (GetClientOrdersRequest) returns (GetClientOrdersResponse);
+  rpc GetClientOrdersStream (GetClientOrdersRequest) returns (stream GetClientOrdersStreamResponse);
 }
 
 message GetRequest {
@@ -21,6 +24,20 @@ message GetStreamResponse {
   Order order = 1;
 }
 
+message GetClientOrdersRequest {
+  int64 client_id = 1;
+  int32 page_size = 2;
+  int64 start_from_order_id = 3;
+}
+
+message GetClientOrdersResponse {
+  repeated OrderRow order_rows = 1;
+}
+
+message GetClientOrdersStreamResponse {
+   OrderRow order_row = 1;
+}
+
 message Order {
   int64 id = 1;
   OrderState state = 2;
@@ -32,6 +49,17 @@ message Order {
     int32 quantity = 2;
     google.type.Money price = 3;
   }
+}
+
+message OrderRow {
+  int64 order_id = 1;
+  int64 client_id = 2;
+  OrderState state = 3;
+  google.type.Money amount = 4;
+  google.protobuf.Timestamp date = 5;
+  int64 sku_id = 6;
+  int32 quantity = 7;
+  google.type.Money price = 8;
 }
 
 enum OrderState {

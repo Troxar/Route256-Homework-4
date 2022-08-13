@@ -35,4 +35,29 @@ public sealed class OrderGrpcService : OrderService.OrderServiceBase
         await foreach (var order in result)
             await responseStream.WriteAsync(new() { Order = order.Map() });
     }
+
+    public override async Task<GetClientOrdersResponse> GetClientOrders(GetClientOrdersRequest request, ServerCallContext context)
+    {
+        var result = await _orderRepository
+            .GetClientOrders(request.ClientId, request.PageSize, request.StartFromOrderId, context.CancellationToken)
+            .ToArrayAsync(context.CancellationToken);
+
+        return new()
+        {
+            OrderRows = { result.Select(orderRow => orderRow.Map()) }
+        };
+    }
+
+    public override async Task GetClientOrdersStream(GetClientOrdersRequest request, IServerStreamWriter<GetClientOrdersStreamResponse> responseStream,
+        ServerCallContext context)
+    {
+        var result = _orderRepository.GetClientOrders(
+            request.ClientId,
+            request.PageSize,
+            request.StartFromOrderId,
+            context.CancellationToken);
+
+        await foreach (var orderRow in result)
+            await responseStream.WriteAsync(new() { OrderRow = orderRow.Map() });
+    }
 }

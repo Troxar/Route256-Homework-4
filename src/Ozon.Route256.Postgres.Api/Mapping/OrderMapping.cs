@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using Google.Protobuf.WellKnownTypes;
 using Ozon.Route256.Postgres.Grpc;
 
 namespace Ozon.Route256.Postgres.Api.Mapping;
@@ -21,6 +22,19 @@ internal static class OrderMapping
             SkuId = item.SkuId,
             Quantity = item.Quantity,
             Price = item.Price.ToMoney()
+        };
+
+    public static OrderRow Map(this Domain.OrderRow orderRow) =>
+        new OrderRow
+        {
+            OrderId = orderRow.OrderId,
+            ClientId = orderRow.ClientId,
+            State = orderRow.State.ToGrpc(),
+            Amount = orderRow.Amount.ToMoney(),
+            Date = orderRow.Date.ToTimestamp(),
+            SkuId = orderRow.SkuId,
+            Quantity = orderRow.Quantity,
+            Price = orderRow.Price.ToMoney()
         };
 
     private static OrderState ToGrpc(this Domain.OrderState state) =>
