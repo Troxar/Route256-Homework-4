@@ -2,11 +2,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Google.Protobuf.WellKnownTypes;
 using Google.Type;
+using Grpc.Core;
 using Grpc.Net.Client;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -70,6 +72,37 @@ public sealed class GetClientOrdersTests : IClassFixture<StartupFixture>
 
         for (int i = 0; i < expected.Length; i++)
             result.OrderRows[i].Should().BeEquivalentTo(expected[i]);
+    }
+
+    [Theory]
+    [ClassData(typeof(DataForTheoryGetClientOrdersShouldReturnOrders))]
+    public async Task GetClientOrdersStream_ShouldReturnOrders(int pageSize, int offsetFromLastOrderId, ExpectedRow[] expected)
+    {
+        // Arrange
+        var cts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
+        var grpc = GetClient();
+        var startFromOrderId = offsetFromLastOrderId == 0 ? 0 : GetLastOrderId(offsetFromLastOrderId);
+
+        // Act
+        using var call = grpc.GetClientOrdersStream(
+            new GetClientOrdersRequest
+            {
+                ClientId = ClientId,
+                PageSize = pageSize,
+                StartFromOrderId = startFromOrderId
+            },
+            cancellationToken: cts.Token);
+
+        var result = await call.ResponseStream
+            .ReadAllAsync(cts.Token)
+            .ToArrayAsync(cts.Token);
+
+        // Assert
+        result.Should().NotBeNull()
+            .And.HaveCount(expected.Length);
+
+        for (int i = 0; i < expected.Length; i++)
+            result[i].OrderRow.Should().BeEquivalentTo(expected[i]);
     }
 
     private class DataForTheoryGetClientOrdersShouldReturnOrders : IEnumerable<object[]>
