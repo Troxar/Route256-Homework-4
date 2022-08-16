@@ -27,23 +27,12 @@ public sealed class GetClientOrdersTests : IClassFixture<StartupFixture>
     private readonly StartupFixture _fixture;
     private const long ClientId = 123456L;
     private readonly object _lockObject = new ();
-    private static bool s_prepared = false;
+    private static bool s_prepared;
 
     public GetClientOrdersTests(StartupFixture fixture)
     {
         _fixture = fixture;
-
-        if (s_prepared)
-            return;
-
-        lock (_lockObject)
-        {
-            if (!s_prepared)
-            {
-                PrepareRepository();
-                s_prepared = true;
-            }
-        }
+        PrepareRepositoryIfItIsNecessary();
     }
 
     [Theory]
@@ -243,6 +232,21 @@ public sealed class GetClientOrdersTests : IClassFixture<StartupFixture>
         var client = _fixture.CreateClient();
         var channel = GrpcChannel.ForAddress(client.BaseAddress!, new() { HttpClient = client });
         return new(channel);
+    }
+
+    private  void PrepareRepositoryIfItIsNecessary()
+    {
+        if (s_prepared)
+            return;
+
+        lock (_lockObject)
+        {
+            if (!s_prepared)
+            {
+                PrepareRepository();
+                s_prepared = true;
+            }
+        }
     }
 
     private async void PrepareRepository()
