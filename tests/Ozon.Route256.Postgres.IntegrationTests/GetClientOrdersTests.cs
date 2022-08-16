@@ -255,9 +255,9 @@ public sealed class GetClientOrdersTests : IClassFixture<StartupFixture>
         using var connection = new NpgsqlConnection(connectionString);
         connection.Open();
 
-        using var commandClient = new NpgsqlCommand("DELETE FROM order_items WHERE order_id IN " +
-                                                    "(SELECT order_id FROM orders WHERE client_id = :clientId);" +
-                                                    "DELETE FROM orders WHERE client_id = :clientId", connection)
+        using var commandClient = new NpgsqlCommand("DELETE FROM order_items WHERE EXISTS " +
+            "(SELECT order_id FROM orders WHERE client_id = :clientId AND order_items.order_id = orders.order_id);" +
+            "DELETE FROM orders WHERE client_id = :clientId", connection)
         {
             Parameters =
             {
