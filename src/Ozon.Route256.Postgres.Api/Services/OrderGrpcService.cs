@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Grpc.Core;
 using Ozon.Route256.Postgres.Api.Mapping;
@@ -38,11 +39,20 @@ public sealed class OrderGrpcService : OrderService.OrderServiceBase
 
     public override async Task<GetClientOrdersResponse> GetClientOrders(GetClientOrdersRequest request, ServerCallContext context)
     {
-        var result = await _orderRepository
-            .GetClientOrders(request.ClientId, request.PageSize, request.StartFromOrderId, context.CancellationToken)
-            .ToArrayAsync(context.CancellationToken);
+        return await GetClientOrders(
+            request.ClientId,
+            request.PageSize,
+            request.StartFromOrderId == 0 ? long.MaxValue : request.StartFromOrderId,
+            context.CancellationToken);
+    }
 
-        return new()
+    private async Task<GetClientOrdersResponse> GetClientOrders(long clientId, int pageSize, long startFromOrderId, CancellationToken ct)
+    {
+        var result = await _orderRepository
+            .GetClientOrders(clientId, pageSize, startFromOrderId, ct)
+            .ToArrayAsync(ct);
+
+        return new GetClientOrdersResponse
         {
             OrderRows = { result.Select(orderRow => orderRow.Map()) }
         };
@@ -51,13 +61,23 @@ public sealed class OrderGrpcService : OrderService.OrderServiceBase
     public override async Task GetClientOrdersStream(GetClientOrdersRequest request, IServerStreamWriter<GetClientOrdersStreamResponse> responseStream,
         ServerCallContext context)
     {
-        var result = _orderRepository.GetClientOrders(
+        await GetClientOrdersStream(responseStream,
             request.ClientId,
             request.PageSize,
-            request.StartFromOrderId,
+            request.StartFromOrderId == 0 ? long.MaxValue : request.StartFromOrderId,
             context.CancellationToken);
+    }
 
-        await foreach (var orderRow in result)
+    private async Task GetClientOrdersStream(IServerStreamWriter<GetClientOrdersStreamResponse> responseStream,
+        long clientId, int pageSize, long startFromOrderId, CancellationToken ct)
+    {
+        var result = _orderRepository.GetClientOrders(
+            clientId,
+            pageSize,
+            startFromOrderId,
+            ct);
+
+        await foreach (var orderRow in result.WithCancellation(ct))
             await responseStream.WriteAsync(new() { OrderRow = orderRow.Map() });
     }
 }
