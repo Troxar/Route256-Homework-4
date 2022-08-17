@@ -80,6 +80,53 @@ ORDER BY order_id;
             yield return new(last.OrderId, last.ClientId, last.State, last.Amount, last.Date, items.ToArray());
     }
 
+    public async IAsyncEnumerable<Domain.OrderRow> GetClientOrders(long clientId, int pageSize, long startFromOrderId,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        const string query = @"
+SELECT
+    orders.order_id,
+    orders.client_id,
+    orders.order_state,
+    orders.order_amount,
+    orders.order_date,
+    items.sku_id,
+    items.quantity,
+    items.price
+FROM orders LEFT JOIN order_items items USING (order_id)
+WHERE client_id = :clientId AND order_id <= :startFromOrderId
+ORDER BY order_id DESC, sku_id ASC
+limit :pageSize;
+";
+
+        await using var connection = new NpgsqlConnection(_connectionString);
+        await using var command = new NpgsqlCommand(query, connection)
+        {
+            Parameters =
+            {
+                { "clientId", clientId },
+                { "pageSize", pageSize },
+                { "startFromOrderId", startFromOrderId == 0 ? long.MaxValue : startFromOrderId }
+            }
+        };
+
+        await connection.OpenAsync(cancellationToken);
+        await using var reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess, cancellationToken);
+
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            yield return new(
+                reader.GetFieldValue<long>(0),
+                reader.GetFieldValue<long>(1),
+                reader.GetFieldValue<OrderState>(2),
+                reader.GetFieldValue<decimal>(3),
+                reader.GetFieldValue<DateTimeOffset>(4),
+                reader.GetFieldValue<long>(5),
+                reader.GetFieldValue<int>(6),
+                reader.GetFieldValue<decimal>(7));
+        }
+    }
+
     public async ValueTask Add(Order[] orders, CancellationToken cancellationToken)
     {
         const string query = @"
